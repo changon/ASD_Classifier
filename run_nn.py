@@ -15,6 +15,9 @@ from model import classifierNetwork
 from analytics import getAverage, getLoss
 from writeTree import write_tree
 
+from datetime import datetime
+startTime=datetime.now()
+
 def printMetric(metrs, epoch, rType, decimal_places=3):
 	s=rType+" - Epoch: "+ str(epoch)+". "
 	for key in metrs:
@@ -117,10 +120,11 @@ ncols=int(sys.argv[1])
 nRounds=int(sys.argv[2])
 ntree=int(sys.argv[3])#100
 testP=float(sys.argv[4])#.2
-adjustT=bool(sys.argv[5])
+adjustT=sys.argv[5]=="True"
 lr=float(sys.argv[6])
-useSubset=bool(sys.argv[7])
+useSubset=sys.argv[7]=="True"
 samplingType=str(sys.argv[8])
+runValidation=sys.argv[9]=="True"
 
 trainData=pd.read_csv("../microarrayASD.csv")
 trainOutcomes=pd.read_csv("../microarrayASDLabels.csv")
@@ -221,6 +225,8 @@ modelSetting["hiddenDims"]=[h1]
 import math
 hiddens=[h1, 10, 500, int(modelSetting["inputDim"]/2), int(math.sqrt(modelSetting["inputDim"]))]
 valMetric="auc"
+if runValidation:
+	hiddens=[h1]
 
 def performValidation(hiddens, xtrain, ytrain, xtest, ytest, modelSetting, nEpochs, valMetric):
 	bestModel=""
@@ -232,7 +238,6 @@ def performValidation(hiddens, xtrain, ytrain, xtest, ytest, modelSetting, nEpoc
 	for nhidden in hiddens:
 		modelSetting["hiddenDims"]=[nhidden]
 		model, testResults, criterion, device, tau, tlosses=runInstance(xtrain, ytrain, xtest, ytest, modelSetting, nEpochs)
-		print(tau)
 		if getAverage(testResults[valMetric]) > getAverage(bestResult[valMetric]):
 			fDevice=device
 			bestResult=testResults
@@ -247,3 +252,7 @@ print("Finished Validation\n")
 print("Now testing\n")
 printMetaInfo(model, tau, nRounds, tlosses, lr, samplingType, useSubset, modelSetting["optimizer"])
 testMetrics, loss=test(testData, testOutcomes, model, criter, device, tau, "Final Test")
+print(hiddens)
+print(params)
+
+print(datetime.now() - startTime)
